@@ -1,0 +1,4 @@
+ollama/kamekichi128/qwen3-4b-instruct-2507:latest
+ollama/llama3.1
+ollama/phi4:14b
+ollama/kwangsuklee/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-GGUF:latest
