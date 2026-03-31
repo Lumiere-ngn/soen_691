@@ -218,7 +218,7 @@ if __name__ == "__main__":
         target_file = row["file"]   
         prompt = row["prompt"]  
         requires_auto_off = row["requires_auto_off"]
-        experiment_timeout = row["timeout"]
+        experiment_timeout = max(float(row["timeout"]), 1200.0)
         filename = f"results/{attack_id.replace('-','')}_{datetime.now().isoformat()}.csv"
         for model in model_list:
             for num in range(num_runs):  # Run each prompt 3 times

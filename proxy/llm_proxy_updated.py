@@ -125,7 +125,7 @@ async def chat_completions(request: Request):
             # ── True streaming — pass chunks through immediately as they arrive ──
             async def stream_generator():
                 accumulated = []
-                async with httpx.AsyncClient(timeout=120) as client:
+                async with httpx.AsyncClient(timeout=1200.0) as client:
                     async with client.stream("POST", OLLAMA_URL, json=ollama_body) as resp:
                         async for raw_bytes in resp.aiter_raw():
                             # Pass bytes through to Open Interpreter immediately
@@ -165,7 +165,7 @@ async def chat_completions(request: Request):
 
         else:
             # ── Non-streaming ──────────────────────────────────────────────────
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(timeout=1200.0) as client:
                 resp = await client.post(OLLAMA_URL, json=ollama_body)
                 data = resp.json()
 
