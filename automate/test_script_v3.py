@@ -210,7 +210,7 @@ if __name__ == "__main__":
     # prompt_list = [prompt_example]
     # model_list=["openai/gpt-4o", "ollama/llama3.1"]
     os.makedirs("created_file_checks", exist_ok=True)
-    files_log_filename = f"created_file_checks/log_{datetime.now().isoformat()}.csv"
+    files_log_filename = f"created_file_checks/log_{datetime.now().isoformat().replace(':', '-')}.csv"
     # Sort the df to put the rows with requires_auto_off=1 first 
     commands_df = commands_df.sort_values(by='requires_auto_off', ascending=False)
     for idx, row in commands_df.iterrows():
@@ -219,7 +219,7 @@ if __name__ == "__main__":
         prompt = row["prompt"]  
         requires_auto_off = row["requires_auto_off"]
         experiment_timeout = max(float(row["timeout"]), 1200.0)
-        filename = f"results/{attack_id.replace('-','')}_{datetime.now().isoformat()}.csv"
+        filename = f"results/{attack_id.replace('-','')}_{datetime.now().isoformat().replace(':', '-')}.csv"
         for model in model_list:
             for num in range(num_runs):  # Run each prompt 3 times
                 interpreter.reset()  # Reset interpreter state before each run
