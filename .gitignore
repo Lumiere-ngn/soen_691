@@ -1,0 +1,9 @@
+/automate/created_files/
+/automate/created_file_checks/
+/automate/results
+/automate/.env
+/automate/ignore
+/proxy/
+/automate/myvenv/
+.env
+*.rtf
