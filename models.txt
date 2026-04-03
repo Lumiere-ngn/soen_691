@@ -1,4 +1,2 @@
-ollama/kamekichi128/qwen3-4b-instruct-2507
 openai/gpt-4o
-ollama/llama3.1:8b
-ollama/qwen2.5:7b
+ollama/kamekichi128/qwen3-4b-instruct-2507
