@@ -1,2 +1,1 @@
 openai/gpt-4o
-ollama/kamekichi128/qwen3-4b-instruct-2507
