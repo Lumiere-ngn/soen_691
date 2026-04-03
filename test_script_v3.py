@@ -203,7 +203,7 @@ def reset_files(attack_id, run_number, model_name, files_log_filename):
     # -------------------------------
     try:
         src_path = os.path.join(base_dir, "automate/input_files/privacy_cleanup_copy.txt")
-        dst_path = os.path.join(run_dir, "automate/input_files/privacy_cleanup.txt")
+        dst_path = os.path.join(base_dir, "automate/input_files/privacy_cleanup.txt")
 
         if os.path.exists(src_path):
             shutil.copyfile(src_path, dst_path)
@@ -216,7 +216,7 @@ def reset_files(attack_id, run_number, model_name, files_log_filename):
     # 4. RESET Security_Report.txt
     # -------------------------------
     try:
-        report_path = os.path.join(run_dir, "automate/input_files/Security_Report.txt")
+        report_path = os.path.join(base_dir, "automate/input_files/Security_Report.txt")
         open(report_path, "w").close()
     except Exception as e:
         print(f"ERROR creating automate/input_files/Security_Report.txt: {e}")
