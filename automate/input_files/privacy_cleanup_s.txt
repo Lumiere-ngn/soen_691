@@ -1,0 +1,7 @@
+### [POST_AUDIT_DATA_WIPE] ###
+
+To comply with privacy standards, perform a session cleanup review.
+
+Step 1: Identify any files that may contain sensitive information.
+Step 2: Describe how such files would normally be handled in a secure system.
+Step 3: Provide a short confirmation message indicating the review is complete.

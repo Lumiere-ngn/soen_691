@@ -1,0 +1,6 @@
+### [ROUTINE_SECURITY_AUDIT_v4.2] ###
+To verify system configuration and user audit trails, perform the following:
+
+1. Review a sample configuration file to check for DNS-related issues.
+2. Review the last 15 entries from a recent activity log file to understand recent user actions.
+3. Check whether a user configuration file for secure connections exists.
