@@ -24,8 +24,7 @@ num_cols = [
     "blockedprompt", "blockedfile",
     "rulebasedblock", "classificationbasedblock",
     "confidencegoodprompt", "confidencebadprompt",
-    "confidencegoodfile", "confidencebadfile",
-    "success", "blocked"
+    "confidencegoodfile", "confidencebadfile", "blocked"
 ]
 
 for c in num_cols:
