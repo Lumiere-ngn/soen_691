@@ -1,29 +1,48 @@
-import pandas as pd 
+import pandas as pd
 import os
 import numpy as np
-import string 
-import argparse 
-import re
+import string
+import argparse
 
+# -------------------------
+# Args
+# -------------------------
 parser = argparse.ArgumentParser()
+parser.add_argument("--security", action="store_true", help="Enable security mode")
+parser.add_argument("--results", nargs="+", type=str, required=True)
 parser.add_argument(
-    "--security", 
-    action="store_true",   # If flag present, True; if absent, False
-    help="Enable security mode"
-)
-
-parser.add_argument(
-    "--results",
-    nargs="+",              # one or more values
+    "--output",
     type=str,
-    required=True,
-    help="Paths to result CSV files"
+    default=None,
+    help="Output filename (e.g., results.csv). Defaults depend on security mode."
 )
 
-args=parser.parse_args() 
-
+args = parser.parse_args()
 security_enabled = args.security
 results_files = args.results
+
+# -------------------------
+# Helpers
+# -------------------------
+def safe_numeric(df, cols):
+    """Convert to numeric and fill NaN with 0 (for binary/count columns)."""
+    for col in cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    return df
+
+def safe_numeric_no_fill(df, cols):
+    """Convert to numeric but keep NaN (for confidence columns)."""
+    for col in cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+def safe_fillna(df, cols, value=0):
+    existing = [c for c in cols if c in df.columns]
+    if existing:
+        df[existing] = df[existing].fillna(value)
+    return df
 
 def encode_yn_partial(series):
     return np.where(
@@ -34,61 +53,55 @@ def encode_yn_partial(series):
         )
     )
 
+# -------------------------
+# Constants
+# -------------------------
+confidence_cols = [
+    "confidencegoodprompt",
+    "confidencebadprompt",
+    "confidencegoodfile",
+    "confidencebadfile"
+]
 
+binary_cols_security = [
+    "blockedprompt",
+    "blockedfile",
+    "rulebasedblock",
+    "classificationbasedblock"
+]
+
+binary_cols_nonsec = [
+    "timeout", "llm_refused", "user_input_req",
+    "failed_to_run", "success"
+]
+
+# -------------------------
+# Load data
+# -------------------------
 df = pd.DataFrame()
-curr_dirname = os.path.dirname(__file__)
-results_dir_base = os.path.join(curr_dirname, '../annotated_results')
+curr_dir = os.path.dirname(__file__)
 
-if security_enabled:
-    print("security enabled")
-    results_dir = os.path.join(results_dir_base, 'with_security')
-else: 
-    results_dir = os.path.join(results_dir_base, 'no_security')
-print(f"results folder: {results_dir}")
+results_dir = os.path.join(
+    curr_dir,
+    "../annotated_results",
+    "with_security" if security_enabled else "no_security"
+)
 
-for results_file in results_files: 
-    file_path = os.path.join(results_dir, results_file)
-    df_file = pd.read_csv(file_path)
-    print(df_file.head())
-    df = pd.concat([df, df_file])    
+print(f"Security enabled: {security_enabled}")
+print(f"Results dir: {results_dir}")
 
+for f in results_files:
+    path = os.path.join(results_dir, f)
+    df = pd.concat([df, pd.read_csv(path)], ignore_index=True)
 
-# Replace empty/whitespace strings with NaN
+# -------------------------
+# Basic cleaning
+# -------------------------
 df = df.replace(r"^\s*$", np.nan, regex=True)
 df = df.loc[:, ~df.columns.str.lower().str.startswith("unnamed")]
 df = df.dropna(how="all")
 
-
-# Step 0: Define valid CASE ID pattern
-# pattern = r"^[A-Z]+-\d+$"  # e.g., ABC-123
-pattern = r"^[A-Z]+(?:-\d+|\d+(?:\.\d+)?)$"
-
-# Step 1: Keep only the first word of each CASE ID
-# Strip and extract valid CASE IDs
-df['CASE ID'] = (
-    df['CASE ID']
-    .astype(str)
-    .str.strip()
-    .str.extract(r"([A-Z]+-\d+(?:\.\d+)?)")  # captures DOS-1, EXFIL-1.1, PE-01
-)
-
-
-# Step 2: Blank out any value that doesn't match the pattern, assign it as NA otherwise for filling later
-# df['CASE ID'] = df['CASE ID'].where(df['CASE ID'].str.match(pattern), pd.NA)
-
-# Step 3: Forward-fill to propagate valid CASE IDs to subsequent rows
-# df['CASE ID'] = df['CASE ID'].replace("", pd.NA).ffill()
-
-df[['CASE ID', 'Model']] = df[['CASE ID', 'Model']].ffill()
-df = df[df['CASE ID'].notna()]
-df.reset_index(drop=True, inplace=True)
-df["Model"] = df["Model"].replace("GPT-4o", "openai/gpt-4o")
-
-print(df['CASE ID'].value_counts())
-# Remove any notes from case ids 
-# df['CASE ID'] = df['CASE ID'].astype(str).str.split().str[0]
-print(df.info())
-
+# Normalize column names
 df.columns = (
     df.columns
     .str.strip()
@@ -97,106 +110,134 @@ df.columns = (
     .str.replace(f"[{string.punctuation}]", "", regex=True)
 )
 
-print(df.columns)
+# Rename known variants
+df = df.rename(columns={
+    "caseid": "case_id",
+    "resultfilename": "result_file_name"
+})
 
-df.rename(columns={"caseid":"case_id"}, inplace=True)
-df['success'] = encode_yn_partial(df['successyn'])
-df = df.drop("successyn", axis=1)
-df.rename(columns={"resultfilename":"result_file_name"}, inplace=True)
+# -------------------------
+# CASE ID cleaning
+# -------------------------
+df["case_id"] = (
+    df["case_id"]
+    .astype(str)
+    .str.strip()
+    .str.extract(r"([A-Z]+-\d+(?:\.\d+)?)")
+)
 
+# Forward fill identifiers
+for col in ["case_id", "model"]:
+    if col in df.columns:
+        df[col] = df[col].ffill()
+
+df = df[df["case_id"].notna()].reset_index(drop=True)
+
+# Normalize model names
+if "model" in df.columns:
+    df["model"] = df["model"].replace("GPT-4o", "openai/gpt-4o")
+
+# -------------------------
+# NON-SECURITY MODE
+# -------------------------
 if not security_enabled:
-    df['timeout'] = encode_yn_partial(df['timeout'])
-    df = df.drop("timeout", axis=1)
-    df['llm_refused'] = encode_yn_partial(df['llmrefused'])
-    df = df.drop("llmrefused", axis=1)
-    df['user_input_req'] = encode_yn_partial(df['userinterventionreq'])
-    df = df.drop("userinterventionreq", axis=1)
-    df['failed_to_run'] = encode_yn_partial(df['failuretorun'])
-    df = df.drop("failuretorun", axis=1)
+    mapping = {
+        "timeout": "timeout",
+        "llmrefused": "llm_refused",
+        "userinterventionreq": "user_input_req",
+        "failuretorun": "failed_to_run",
+        "successyn": "success"
+    }
 
-    df.rename(columns={"importantthinghappenwhilerunning":"notes"}, inplace=True)
+    for raw, new in mapping.items():
+        if raw in df.columns:
+            df[new] = encode_yn_partial(df[raw])
+            df.drop(columns=[raw], inplace=True)
 
+    # Drop rows where success missing (if present)
+    if "success" in df.columns:
+        df = df.dropna(subset=["success"]).reset_index(drop=True)
 
-print(df.info())
+    # Rename notes
+    if "importantthinghappenwhilerunning" in df.columns:
+        df = df.rename(columns={"importantthinghappenwhilerunning": "notes"})
 
-if security_enabled:
-    # -------------------------
-    # 1. Clean whitespace again (safety)
-    # -------------------------
+    # Convert binary columns → int
+    for col in binary_cols_nonsec:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+
+# -------------------------
+# SECURITY MODE
+# -------------------------
+else:
+    # Strip whitespace
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
-    # -------------------------
-    # 2. Normalize Y/N columns
-    # -------------------------
     yn_map = {"Y": 1, "N": 0}
 
-    binary_cols = [
-        "blockedprompt",
-        "blockedfile",
-        "rulebasedblock",
-        "classificationbasedblock"
-    ]
-
-    for col in binary_cols:
+    # Convert Y/N → 1/0
+    for col in binary_cols_security:
         if col in df.columns:
-            df[col] = df[col].replace({"UK": np.nan, "UL": np.nan})  # treat unknowns as missing
+            df[col] = df[col].replace({"UK": np.nan, "UL": np.nan})
             df[col] = df[col].map(yn_map)
 
-    # -------------------------
-    # 3. Fill one-hot / missing values with 0
-    # -------------------------
-    confidence_cols = [
-        "confidencegoodprompt",
-        "confidencebadprompt",
-        "confidencegoodfile",
-        "confidencebadfile"
-    ]
+    # Fill missing binary values → 0
+    df = safe_fillna(df, binary_cols_security, 0)
 
-    for col in confidence_cols:
+    # Cast binary → int
+    for col in binary_cols_security:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            df[col] = df[col].astype(int)
 
-    df[confidence_cols] = df[confidence_cols].fillna(0)
+    # Convert confidence → float (keep NaN)
+    df = safe_numeric_no_fill(df, confidence_cols)
 
-    # -------------------------
-    # 4. Fill missing binary columns with 0
-    # -------------------------
-    df[binary_cols] = df[binary_cols].fillna(0)
-
-    # -------------------------
-    # 5. Ensure numeric types
-    # -------------------------
-    numeric_cols = confidence_cols + ["trial", "success"]
-
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-
-    # -------------------------
-    # 6. Create combined 'blocked' column
-    # -------------------------
-    if "blockedprompt" in df.columns and "blockedfile" in df.columns:
+    # Create combined blocked column
+    if all(c in df.columns for c in ["blockedprompt", "blockedfile"]):
         df["blocked"] = (
-            (df["blockedprompt"] == 1) | (df["blockedfile"] == 1)
+            (df["blockedprompt"] == 1) |
+            (df["blockedfile"] == 1)
         ).astype(int)
 
+# -------------------------
+# Final numeric normalization
+# -------------------------
+common_numeric = ["trial"]
 
-# Drop rows where 'success' is NaN
-df = df.dropna(subset=['success'])
-df.reset_index(drop=True, inplace=True)
+numeric_cols = common_numeric.copy()
+numeric_cols += (
+    binary_cols_security if security_enabled else binary_cols_nonsec
+)
+
+df = safe_numeric(df, numeric_cols)
+
+# Ensure confidence columns remain float with NaN
+df = safe_numeric_no_fill(df, confidence_cols)
+
+# -------------------------
+# Save
+# -------------------------
+out_base = os.path.join(curr_dir, "../cleaned_results")
+subdir = "with_security" if security_enabled else "no_security"
+out_dir = os.path.join(out_base, subdir)
+
+os.makedirs(out_dir, exist_ok=True)
+
+# Determine filename
+if args.output:
+    output_file = os.path.basename(args.output)
+else:
+    output_file = (
+        "cleaned_results_security.csv"
+        if security_enabled
+        else "cleaned_results.csv"
+    )
+
+output_path = os.path.join(out_dir, output_file)
+
 print(df.info())
 
-# Save cleaned version to a CSV
-cleaned_results_dir_base = os.path.join(curr_dirname, '../cleaned_results')
-os.makedirs(cleaned_results_dir_base, exist_ok=True)
+df.to_csv(output_path, index=False)
 
-if security_enabled: 
-    cleaned_results_with_sec_dir = os.path.join(cleaned_results_dir_base, 'with_security')
-    os.makedirs(cleaned_results_with_sec_dir, exist_ok=True)
-    df.to_csv(os.path.join(cleaned_results_with_sec_dir, 'cleaned_results_security'))
-
-else:
-    cleaned_results_no_sec_dir = os.path.join(cleaned_results_dir_base, 'no_security')
-    os.makedirs(cleaned_results_no_sec_dir, exist_ok=True)
-    df.to_csv(os.path.join(cleaned_results_no_sec_dir, 'cleaned_results'))
-    
+print(f"Saved cleaned results to: {output_path}")
