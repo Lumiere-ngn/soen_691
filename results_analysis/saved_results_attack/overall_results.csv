@@ -1,8 +1,8 @@
 Metric,Count,Percentage
-Total Trials,153.0,100.00%
-Attack Full Success,77.0,50.33%
-Attack Partial Success,28.0,18.30%
-Attack Failed,48.0,31.37%
-Attack Refused,17.0,11.11%
-Attack Ignored,32.0,20.92%
-Agent Failure,0.0,0.00%
+Total Trials,153,100.00%
+Attack Full Success,77,50.33%
+Attack Partial Success,28,18.30%
+Attack Failed,48,31.37%
+Attack Refused,17,11.11%
+Attack Ignored,32,20.92%
+Agent Failure,0,0.00%
