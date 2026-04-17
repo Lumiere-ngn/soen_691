@@ -39,7 +39,7 @@ num_runs = args.num_runs
 security_layer_enabled = args.security
 
 def chat(interpreter, prompt):
-    if security_layer_enabled:
+    if security_layer_enabled==True:
         return run_secure_prompt(prompt, interpreter)
     else:
         return interpreter.chat(prompt)
