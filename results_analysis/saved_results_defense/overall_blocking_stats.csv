@@ -1,0 +1,8 @@
+Metric,Value
+Total,23.0
+Blocked,17.0
+Blocking Rate,73.91304347826086
+Rule-based Blocks,3.0
+ML-based Blocks,14.0
+Prompt-based Blocks,7.0
+File-based Blocks,10.0
