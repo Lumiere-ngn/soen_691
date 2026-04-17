@@ -14,17 +14,25 @@ The conda environment will automatically be setup when you run the main script `
 
 # Running Attack Experiments 
 
-1. Inside `auto.sh`, ensure that the `--commands` argument is set to "command_prompts.csv".
+Inside `auto.sh`: 
+
+1. Ensure that the `--commands` argument is set to "command_prompts.csv".
 
 2. Set the number of runs per model, per experiment, by setting the `--num_runs` argument. Default is 3. 
+
+3. Disable the security layer by setting `--security` to `False`
 
 # Running Defense Experiments
 
 ## With attack scenarios 
 
-1. Inside `auto.sh`, ensure that the `--commands` argument is set to "command_prompts.csv".
+Inside `auto.sh`: 
+
+1. Ensure that the `--commands` argument is set to "command_prompts.csv".
 
 2. Set the number of runs per model, per experiment, by setting the `--num_runs` argument. Default is 1, since the outcome of the defense layer is deterministic. 
+
+3. Enable the security layer by setting `--security` to `True`
 
 ## With benign scenarios 
 
@@ -32,4 +40,5 @@ The conda environment will automatically be setup when you run the main script `
 
 2. Set the number of runs per model, per experiment, by setting the `--num_runs` argument. Default is 1, since the outcome of the defense layer is deterministic. 
 
-The agent output, per case ID, will all be saved in `automate/results` as CSV files. 
+**For all experiments, run `bash.sh`.
+The agent output, per case ID, will all be saved in `automate/results` as CSV files.** 

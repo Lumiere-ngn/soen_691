@@ -23,9 +23,9 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--commands', type=str, required=True)
 
-parser.add_argument('--num_runs', type=int, default=3)\
+parser.add_argument('--num_runs', type=int, default=3)
 
-# parser.add_argument('--output', type=int, required=True)
+parser.add_argument('--security', type=bool, default=False, help="Whether to run the prompts with the security layer or not")
 
 args = parser.parse_args()
 
@@ -36,10 +36,13 @@ PROMPTS_FILE = args.commands
 MODELS_FILE = "models.txt"
 
 num_runs = args.num_runs
+security_layer_enabled = args.security
 
-def safe_chat(interpreter, prompt):
-    # return interpreter.chat(prompt)
-    return run_secure_prompt(prompt, interpreter)
+def chat(interpreter, prompt):
+    if security_layer_enabled:
+        return run_secure_prompt(prompt, interpreter)
+    else:
+        return interpreter.chat(prompt)
     
 def run_prompt(prompt, attack_id, run_number, model_name, target_file=None, timeout=600, requires_auto_off=False):
     # Set model to avoid interactive prompts
@@ -69,15 +72,11 @@ def run_prompt(prompt, attack_id, run_number, model_name, target_file=None, time
     old_stdout = sys.stdout
     old_stderr = sys.stderr
 
-    # sys.stdout = buffer
-    # sys.stderr = buffer_err
-
     sys.stdout = Tee(old_stdout, buffer)
     sys.stderr = Tee(old_stderr, buffer_err)
 
     try:
-        response = func_timeout(timeout, safe_chat, args=(interpreter, prompt))
-        # reponse = safe_chat(interpreter, prompt)
+        response = func_timeout(timeout, chat, args=(interpreter, prompt))
     except FunctionTimedOut:
         response = "timeout"
     finally:
@@ -92,7 +91,6 @@ def run_prompt(prompt, attack_id, run_number, model_name, target_file=None, time
         "attack_id": attack_id,
         "run_number": run_number,
         "model_name": model_name,
-        # "command": " ".join(command),
         "prompt": prompt,
         "target_file": target_file if target_file else "",
         "response": response,
@@ -111,7 +109,6 @@ def save_to_csv(data, file_path):
             "attack_id",
             "run_number",
             "model_name",
-            # "command",
             "prompt",
             "target_file",
             "response",
@@ -229,11 +226,6 @@ with open(MODELS_FILE, "r") as f:
         model_list.append(line.strip())
 
 if __name__ == "__main__":
-    # example_id = "A1"
-    # prompt_example = "Write a Python script that prints hello"
-    # example_file = "example.py"
-    # prompt_list = [prompt_example]
-    # model_list=["openai/gpt-4o"]
     os.makedirs("automate/created_file_checks", exist_ok=True)
     files_log_filename = f"automate/created_file_checks/log_{datetime.now().isoformat()}.csv"
     # Sort the df to put the rows with requires_auto_off=1 first 
@@ -249,13 +241,6 @@ if __name__ == "__main__":
             for num in range(num_runs):  # Run each prompt 3 times
                 interpreter.reset()  # Reset interpreter state before each run
                 try: 
-                    # result = run_prompt(
-                    #     prompt=prompt,
-                    #     attack_id=attack_id,
-                    #     run_number=num,
-                    #     model_name=model,
-                    #     target_file=target_file
-                    # )
                     result = run_prompt(
                         prompt,
                         attack_id,
