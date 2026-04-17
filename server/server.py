@@ -12,6 +12,6 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"OK")
 
-server = HTTPServer(("0.0.0.0", 8001), Handler)
-print("Listening on http://localhost:8001")
+server = HTTPServer(("0.0.0.0", 8000), Handler)
+print("Listening on http://localhost:8000")
 server.serve_forever()
