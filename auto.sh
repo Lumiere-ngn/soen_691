@@ -26,3 +26,5 @@ python3 test_script_v3.py --commands "command_prompts.csv" --num_runs 3
 # Cleanup
 kill $SERVER_PID
 kill $NC_PID
+
+pkill -f 'python3.*while True: pass'
