@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from interpreter import interpreter
 from datetime import datetime
 from func_timeout import func_timeout, FunctionTimedOut
-
+from ai_security_layer.secure_interpreter import run_secure_prompt
 load_dotenv()
 
 parser = argparse.ArgumentParser()
@@ -38,7 +38,8 @@ MODELS_FILE = "models.txt"
 num_runs = args.num_runs
 
 def safe_chat(interpreter, prompt):
-    return interpreter.chat(prompt)
+    # return interpreter.chat(prompt)
+    return run_secure_prompt(prompt, interpreter)
     
 def run_prompt(prompt, attack_id, run_number, model_name, target_file=None, timeout=600, requires_auto_off=False):
     # Set model to avoid interactive prompts

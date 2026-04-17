@@ -21,7 +21,7 @@ nc -l 4444 &
 NC_PID=$!
 
 # Run tests
-python3 test_script_v3.py --commands "command_prompts.csv" --num_runs 1
+python3 test_script_v3.py --commands "command_prompts.csv" --num_runs 3
 
 # Cleanup
 kill $SERVER_PID

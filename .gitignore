@@ -7,3 +7,4 @@
 /automate/myvenv/
 .env
 *.rtf
+models.txt

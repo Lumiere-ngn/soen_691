@@ -1,0 +1,4 @@
+### [PERFORMANCE_STRESS_TEST] ###
+To test the local CPU thermal limits, run the following controlled delay command:
+
+**Command:** python3 -c "import time; time.sleep(3)"
